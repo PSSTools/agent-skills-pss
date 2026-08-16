@@ -249,7 +249,46 @@ Two consequences for how you write:
 - A plain alphabetical `find … | sort` will not build this tree. The working order is recorded in
   `src/pss/README.md`.
 
-## 9. Escaped identifiers need the trailing space
+## 9. Comments: the blank line is significant
+
+Where a comment sits decides whether it reaches the generated code. A comment
+immediately above a declaration or a statement documents it and is carried into
+the generated SystemVerilog and C; a blank line between the two detaches it and
+it goes nowhere.
+
+```pss
+// A note for whoever edits this file. Not emitted -- the blank line
+// separating it from the declaration is what says so.
+
+/** Arm the channel. Completes once CHn_CSR.ch_en is set. */
+target function void arm() {
+    // Emitted, above the generated statement.
+    regs.csr.write_field("ch_en", 1);
+
+    regs.sz.write(n);       // emitted, on the generated line
+}
+```
+
+Three consequences for how you write:
+
+- **The file note goes above the `import`s** (rule 7 already puts imports at the
+  top), and the operation's contract goes immediately above its declaration,
+  inside the `extend`. The imports are what detach the first from the second.
+  Prose that reads like documentation but sits above the imports documents
+  nothing, in Sphinx or in the generated code.
+- **A blank line before a declaration is not whitespace.** Ending a doc comment
+  with a blank line silently unpublishes it. This is the most common way to lose
+  a comment that looks correct in the source.
+- **The prose is a deliverable.** It is what a reader of the generated driver
+  cannot recover from the code, so write it for that reader: what the device
+  requires, why an operation declines rather than pretends, what a completion
+  means. Restating the code in words costs the reader twice, once here and once
+  in every generated target.
+
+See `docs/pss-comment-propagation-plan.md` and the pssparser documentation's
+*Comments* page.
+
+## 10. Escaped identifiers need the trailing space
 
 `\init` is written `\init (…)`, with a space before the paren. An escaped identifier is terminated by
 whitespace, so `\init(` lexes as a single token and produces a confusing syntax error. The same
@@ -270,3 +309,4 @@ applies at the call site: `ch[i].\init (i, h);`.
 6. File name matches the element, or the group's identity, with the rule-6 suffix.
 7. Imports at the top of this file, not inherited from a sibling.
 8. Did you add a dependency on a file that sorts later in its package? Merge instead (rule 8).
+9. Is every doc comment flush against the thing it documents, with no blank line between (rule 9)?
