@@ -86,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for internal identifiers in tracked files
         # This repo is published to git.dvkit.org, so anything committed here is
@@ -101,31 +103,17 @@ jobs:
           echo "OK: no internal identifiers in tracked files"
 
       - name: Stamp the build version
-        # Tag builds keep the clean number. Everything else gets a PEP 440
-        # local version segment, which PyPI rejects outright.
+        # Releases are tag-driven: __about__.py carries a 0.0.0 placeholder and
+        # the version comes from git. A tag build gets the tag's version; any
+        # other build is named relative to the nearest tag, like `git describe`,
+        # with a PEP 440 local segment that PyPI rejects outright -- so a CI
+        # artifact can never be published.
         #
-        #   0.0.5.dev12+fj.g7775f37
-        #            │   └─ WHICH FORGE. $GITHUB_RUN_ID is NOT unique across
-        #            │      them: GitHub's is an 11-digit global counter,
-        #            │      Forgejo's is a per-repo index (max 146 on this whole
-        #            │      instance) that restarts if the instance is rebuilt.
-        #            │      Without the platform tag the two collide.
-        #            └───── the CI run
+        #   0.1.0.post3+fj.g1b7503e     3 commits after v0.1.0, built on Forgejo
         #
-        # src/agent_skills_pss/__about__.py follows the version_info/SUFFIX
-        # convention, so the sed only ever touches SUFFIX.
-        run: |
-          case "$GITHUB_REF" in
-            refs/tags/*)
-              echo "tag build -- leaving the version clean"
-              ;;
-            *)
-              stamp=".dev${GITHUB_RUN_ID}+fj.g$(git rev-parse --short=7 HEAD)"
-              echo "stamping $stamp"
-              sed -i 's/^SUFFIX = ""$/SUFFIX = "'"$stamp"'"/' src/agent_skills_pss/__about__.py
-              ;;
-          esac
-          grep -n 'SUFFIX' src/agent_skills_pss/__about__.py || true
+        # The local segment carries the forge because both forges build every
+        # commit. See scripts/stamp-version.sh.
+        run: scripts/stamp-version.sh fj
 
       - name: Build sdist and wheel
         # A venv rather than the system interpreter: the image's pip is 22.0.2
@@ -176,27 +164,20 @@ jobs:
           path: dist
 
       - name: Check the tag IS the version
-        # REQUIRED, not optional. With the dev-build publish stream deleted
-        # there is no fallback: the tag alone determines the published version.
-        # Asserts the SOURCE agrees with the tag AND that the built artifacts
-        # agree with the source -- a build that read a stale version file
-        # passes the first and fails the second.
-        #
+        # REQUIRED, not optional: the tag alone determines the published
+        # version, and a PyPI version can be yanked but never reused. The
+        # source holds only a placeholder, so what is checked is that every
+        # BUILT ARTIFACT carries the tag's version -- a build that skipped or
+        # botched the stamp fails here, before anything is uploaded.
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
-          base=$(python3 -c "import ast,re; s=open('src/agent_skills_pss/__about__.py').read(); print('.'.join(str(n) for n in ast.literal_eval(re.search(r'^version_info = (.*)$', s, re.M).group(1))))")
-          echo "tag=$tag  source=$base"
-          if [ "$tag" != "$base" ]; then
-            echo "::error::tag v$tag does not match version $base in src/agent_skills_pss/__about__.py"
-            exit 1
-          fi
           for f in dist/*; do
             case "$(basename "$f")" in
-              agent_skills_pss-${base}-*.whl|agent_skills_pss-${base}.tar.gz) ;;
-              *) echo "::error::artifact $(basename "$f") is not version ${base}"; exit 1 ;;
+              agent_skills_pss-${tag}-*.whl|agent_skills_pss-${tag}.tar.gz) ;;
+              *) echo "::error::artifact $(basename "$f") is not version ${tag}"; exit 1 ;;
             esac
           done
-          echo "OK: tag, source version and every artifact agree on ${base}"
+          echo "OK: tag and every artifact agree on ${tag}"
 
       - name: Publish to PyPI
         # Plain twine rather than a third-party action -- which is not available

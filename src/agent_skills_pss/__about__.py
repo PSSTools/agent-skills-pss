@@ -1,8 +1,4 @@
-version_info = (0, 1, 0)
-
-# CI rewrites this to ".dev<run-id>+<forge>.g<sha>" on non-tag builds, so a
-# wheel produced by an ordinary push can never carry a version that could be
-# published to PyPI. Tag builds leave it empty and ship the clean number.
-SUFFIX = ""
-
-__version__ = ".".join([str(n) for n in version_info]) + SUFFIX
+# Placeholder. Releases are tag-driven: CI replaces this with the version
+# derived from git by scripts/stamp-version.sh -- the tag's version on a tag
+# build, <tag>.post<N>+<forge>.g<sha> otherwise. A plain checkout reports 0.0.0.
+__version__ = "0.0.0"

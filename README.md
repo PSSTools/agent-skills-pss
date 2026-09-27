@@ -39,12 +39,14 @@ A git checkout of this repository works too: the skills live in `skills/`.
 
 ## Releasing
 
-Bump `version_info` in `src/agent_skills_pss/__about__.py`, then tag:
+Releases are tag-driven; there is no version to bump in the source.
 
 ```
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
-CI checks that the tag matches the source version before publishing to PyPI.
-Builds from branch pushes carry a `.dev<run>+<forge>.g<sha>` version and cannot
-be published.
+CI derives the version from git (`scripts/stamp-version.sh`). A tag build is
+the tag's version; any other build is named relative to the nearest tag, e.g.
+`0.1.0.post3+gh.g1b7503e` is three commits after `v0.1.0`, built on GitHub.
+Those local versions are rejected by PyPI, so only a tag can be published.
+A plain source checkout reports `0.0.0`.
