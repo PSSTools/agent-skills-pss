@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-skills-pss"
+dynamic = ["version"]
+description = "Agent skills for writing and reviewing PSS (Portable Test and Stimulus) models"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Matthew Ballance"},
+]
+keywords = ["PSS", "Portable Stimulus", "agent skills", "LLM", "ivpm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+
+[project.urls]
+Homepage = "https://github.com/psstools/agent-skills-pss"
+
+[project.entry-points."agent.skills"]
+agent-skills-pss = "agent_skills_pss.skills:get_skill_dirs"
+
+[tool.hatch.version]
+source = "code"
+path = "src/agent_skills_pss/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_skills_pss"]
+
+# skills/ stays at the repository root so a git checkout (e.g. an IVPM git
+# dependency) is auto-probed as-is; the wheel carries it as package data.
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "agent_skills_pss/share/skills"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/skills",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/NOTICE",
+]
