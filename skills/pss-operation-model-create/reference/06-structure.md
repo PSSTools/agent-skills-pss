@@ -6,7 +6,7 @@ live.
 ## Choose the subject
 
 A **subject** is the thing an end-to-end operation completes against: a channel, a queue, a port, an
-engine. It is whatever `probe_<subject>` reads and `wait_<subject>` waits on.
+engine. It is whatever `<subject>_probe` reads and `<subject>_wait` waits on.
 
 For a device with N identical instances of something, the choice is between:
 
@@ -49,9 +49,20 @@ initialization must be set on the way down. The environment's `init_down` adds t
 handle, and passes it into the device, which derives every subject's bank from the map constants in
 one call.
 
-Note that `init` is a reserved word, so a solve-time constructor is written as an escaped identifier
-`\init` — and an escaped identifier is terminated by whitespace, so it needs the trailing space at
-both declaration and call site.
+**Name that solve-time constructor `initialize`.** It is a plain identifier, so it needs no escaping
+and no whitespace discipline at the call site:
+
+```pss
+solve function void initialize(addr_handle_t base);   // on the subject component
+```
+
+Do **not** call it `init`, and do not write the escaped form `\init `. Older models use the escaped
+identifier on the belief that `init` is reserved; it is not — PSS 3.1 §4.4 Table 3 does not list it,
+and the `exec_kind` production (§20.1.1) has only `init_down` and `init_up`, no bare `init`. But
+`\init ` carries a real hazard regardless: an escaped identifier is terminated by **whitespace**, so
+`\init(` lexes as one token and produces a baffling syntax error, and the trailing space is required
+at both declaration and call site. `initialize` is a plain identifier with none of that, and it does
+not read as a near-miss for the `init_up` / `init_down` execs it is called from.
 
 ## Data types
 
@@ -85,14 +96,15 @@ file, components as a top-level file plus a same-named directory, everything els
     <dev>_cfg_nonblocking.pss     the flag, false   ]  the build selects one
 <dev>_types_pkg.pss               status enum incl. PENDING, config structs
 <dev>_regs_pkg/                   ← from pss-register-model-create
-<dev>_sub_c.pss                   subject component: regs, inflight, wake, init
+<dev>_sub_c.pss                   subject component: regs, inflight, wake, initialize
 <dev>_sub_c/functions/
-    start_<op>.pss                ]
-    probe_<subject>.pss           ]  the non-blocking core — every level
-    check_<op>.pss                ]
+    initialize.pss                ]
+    <op>_start.pss                ]
+    <op>_check.pss                ]  the non-blocking core — every level
+    <subject>_probe.pss           ]
     <configuration ops>.pss       ]
-    wait_<subject>.pss            ]  gated
-    <op>.pss                      ]
+    <op>.pss                      ]  gated
+    <subject>_wait.pss            ]
 <dev>_sub_c/actions/
     <op>_a.pss                    gated
 ```

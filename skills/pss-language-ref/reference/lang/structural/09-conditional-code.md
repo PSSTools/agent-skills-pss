@@ -76,6 +76,8 @@ package dma_pkg {
   configuration.
 - **A `compile if` block introduces no new scope.** Declarations inside it land in the enclosing
   scope (§19.1.1).
+- **Always brace the branch.** Earlier PSS versions let a single-item branch omit the curly
+  braces; that syntax is **deprecated** (§19.2, note under Syntax 89).
 - `compile if` may appear in: global/package scope, action, component, struct, procedural scopes
   (execs and functions) **excluding target-template exec bodies**, constraints, covergroups, and
   overrides (§19.2.1).

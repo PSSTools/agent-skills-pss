@@ -12,7 +12,10 @@ description: Write, review, and debug PSS (Portable Test and Stimulus, Accellera
 # PSS language reference
 
 Reference data for writing *good* PSS, organized so you can find the rule that governs the
-line you are about to write. Clause citations are to **PSS 3.1 Draft 19 (July 14 2026)**.
+line you are about to write. Clause citations are to **PSS 3.1 Draft for Public Review (August 31
+2026)**. Clause *numbers* churn between drafts of the same version — if a number does not resolve,
+match on the clause **title** given alongside it and see `reference/3.1-deltas.md`
+§"What changed between 3.1 drafts".
 
 **Start here → pick a route below. Do not read this file top-to-bottom and start typing.**
 
@@ -118,8 +121,11 @@ The ten rules that are broken most often. Everything else, look up.
 1. **Solve platform vs. target platform is a hard partition.** A `solve function` shall not be
    called from `exec body` / `run_start` / `run_end`; a `target function` shall not be called
    from `init_down` / `init_up` / `pre_solve` / `post_solve` / `pre_body`. (§20.2.1.3)
-2. **`comp` is read-only.** Component attributes are set during elaboration — in `init_down` /
-   `init_up` — and read thereafter. An action never writes `comp.<field>`. (§9.1.6)
+2. **`comp` is read-only unless the field is `mutable`.** A component is immutable once its
+   `init_up` has run; attributes are set during elaboration and read thereafter.
+   The **`mutable`** qualifier **3.1** is the sole exception: such a field may be written during
+   *solve-time* execution (solve execs, activity solving) but **never from a target exec**. It
+   may not be applied to component-instance fields. (§9.1.4.1e, §9.1.6)
 3. **No `rand` declarations in procedural scope.** Randomness inside an exec or function comes
    from the `randomize` statement or `urandom()`. (§20.7.2)
 4. **Native PSS functions take no parameter directions.** `input`/`output`/`inout` are for
@@ -135,10 +141,12 @@ The ten rules that are broken most often. Everything else, look up.
 8. **Traversal is `do <action>`, not a function call.** An activity schedules actions; it does
    not execute them. Sequencing in an activity is a *partial* order, not a program. (§11.3)
 9. **`match` needs a `default`** unless the arms provably cover the domain — no matching arm is
-   an error at runtime, and nothing checks it statically. (§20.7.9)
+   an error at runtime, and nothing checks it statically. (§20.7.10)
 10. **Register groups implement exactly one offset scheme** — either `get_offset_of_path()`, or
     both of `get_offset_of_instance()` / `get_offset_of_instance_array()`. Never all three.
-    (§21.14)
+    The same one-of-two rule applies independently to the `get_mnemonic_*` set **3.1**; a group
+    may implement both sets, and `use_symbolic_reg_names()` selects which is active.
+    (§21.14.2, §21.14.6.5)
 
 ---
 

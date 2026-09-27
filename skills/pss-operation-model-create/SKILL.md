@@ -66,7 +66,7 @@ Each stage closes questions the next depends on. Work them in order.
    6. state each completion contract     reference/03-classify.md
             │       ← destructive? ⇒ the in-progress guard is mandatory
    7. split into the two API levels      reference/04-api-levels.md
-            │       ← start_<op> + check_<op>, then the blocking wrapper
+            │       ← <op>_start + <op>_check, then the blocking wrapper
    8. design a notification scheme       reference/05-notification.md
             │       ← per event. THIS IS WHERE MODELS GO WRONG
    9. data types and component tree      reference/06-structure.md
@@ -108,13 +108,13 @@ both APIs, in this relationship:
 
 ```
     NON-BLOCKING  (unconditional — every profile, every target)
-        start_<op>(args)          initiate: claim, program, arm
-        check_<op>() -> status    one probe of the completion condition, decoded
+        <op>_start(args)          initiate: claim, program, arm
+        <op>_check() -> status    one probe of the completion condition, decoded
 
     BLOCKING  (gated on a capability flag)
         <op>(args) {
-            start_<op>(args);
-            while (check_<op>() == PENDING) wait_related_event();
+            <op>_start(args);
+            while (<op>_check() == PENDING) wait_related_event();
         }
 ```
 
@@ -123,7 +123,7 @@ Three consequences:
 - **A target without a blocking runtime is not a degraded case.** It is the base case, consuming the
   level every target has. Bare-metal firmware, a boot ROM, an ISR — all of them get a complete API.
 - **The blocking wrapper adds only the loop.** Any register access or device-specific decision in
-  `<op>()` belongs in `start_<op>()`. This is what makes one simulation regression cover both: the
+  `<op>()` belongs in `<op>_start()`. This is what makes one simulation regression cover both: the
   simulator executes the non-blocking core *because it is the body of what the simulator runs*.
 - **`wait_related_event()` is the only platform-dependent line in the model.** Everything else — the
   programming, the decode, the guard — is portable by construction.
@@ -155,15 +155,25 @@ most of a skill's value to someone reading a model they did not write.
 
 | Element | Name |
 |---|---|
-| initiate half | `start_<op>` |
-| public poll | `check_<op>`, or `check_completion` when one condition serves every operation |
-| internal decode, no guard | `probe_<subject>` |
-| blocking loop for a subject | `wait_<subject>`, or `wait_completion` |
+| initiate half | `<op>_start` |
+| public poll | `<op>_check`, or `completion_check` when one condition serves every operation |
+| internal decode, no guard | `<subject>_probe` |
+| blocking loop for a subject | `<subject>_wait`, or `completion_wait` |
 | the one platform-dependent line | `wait_related_event` |
 | notification entry point | `notify_<event>` |
 | capability flag | `<DEV>_HAS_BLOCKING` |
+| solve-time constructor | `initialize` — a plain identifier; **not** `init` or `\init ` (see `reference/06-structure.md`) |
 
-`start_<op>` reads as half of a pair, which is what it is, and sorts next to `check_<op>`.
+**The operation name comes first, the role is the suffix.** Everything belonging to one operation
+then sorts and greps as a block — `transfer_single`, `transfer_single_check`, `transfer_single_start`
+land together in a listing, in an editor's symbol list, and in a `grep transfer_single`. A prefix
+convention scatters them across three places in the alphabet, which is the wrong grouping: a reader
+looks for *an operation*, not for *all the starts*.
+
+Two names deliberately keep the prefix form, because they are **seams rather than operations**:
+`wait_related_event` (the one platform-dependent line) and `notify_<event>` (the environment's entry
+point). Being greppable as a class is exactly their purpose — an integrator wants to find every one
+of them at once.
 
 ---
 

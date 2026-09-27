@@ -19,7 +19,7 @@ Reference page for all of these: the *Gotchas* sections tagged *Tier 4* across `
 | | |
 |---|---|
 | **Rule** | Exactly one `match` arm must be found. More than one is an error; none, with no `default`, is an error — at runtime. |
-| **LRM clause** | §20.7.9 |
+| **LRM clause** | §20.7.10 |
 | **Tier** | 4 |
 
 **Marker**

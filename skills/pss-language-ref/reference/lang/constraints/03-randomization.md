@@ -129,7 +129,9 @@ pool problem, and vice versa.
 When choosing a value, the tool accounts for **both** the explicit constraints on the field and
 the **implied** constraints from fields traversed later in the activity — including those
 introduced by **inferred actions, binding, and scheduling**. Lookahead also extends to
-sub-actions and to dynamic constraints.
+sub-actions (§13.4.10) and to **generic constraints** (§13.4.11) — a generic constraint traversed
+in an activity holds for the rest of that branch *and* the remainder of the activity, so a value
+chosen before the traversal must leave the branch satisfiable.
 
 Practical consequence: an early traversal's value can be restricted by something much later in
 the activity, with no local explanation.

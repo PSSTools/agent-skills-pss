@@ -182,7 +182,7 @@ array inside a device-wide group.
 
 The reason is structural, not cosmetic. The operation model has a per-channel component,
 `wb_dma_ch_c`. With shape B, each instance owns a `wb_dma_ch_regs_c` and binds it to
-`WB_DMA_CH_BASE + chan * WB_DMA_CH_STRIDE` in its `\init`, so the channel's identity lives in the
+`WB_DMA_CH_BASE + chan * WB_DMA_CH_STRIDE` in its `initialize`, so the channel's identity lives in the
 handle and **every register access in the operation code is index-free** — `comp.regs.csr…` rather
 than `comp.regs.ch[m_chan].csr…`. The index is computed once at elaboration instead of being threaded
 through every operation body.

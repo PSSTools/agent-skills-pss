@@ -49,8 +49,9 @@ environments. The list, so it is auditable:
 | join specifications (`join_branch` etc.) | §11.3.6 | `activity_shapes.pss` |
 | `replicate` index variable | §11.5.1.1 | `activity_shapes.pss` |
 | `foreach` index variable in an activity | §11.4.3 | `activity_shapes.pss` |
-| `soft` constraints | §13.1.11 | `constraints.pss` |
-| `dist` directive | §13.1.12 | `constraints.pss` |
+| `soft` constraints | §13.1.12 | `constraints.pss` |
+| `dist` directive | §13.1.13 | `constraints.pss` |
+| generic constraints | §13.1.2 | `constraints.pss` |
 | `exec pre_body` | §20.1.2 | `procedural_realization.pss` |
 | `super;` in a derived exec | §20.1.4.2 | `extension_variants.pss` |
 | `compile assert` inside a template | §19.4 | `extension_variants.pss` |

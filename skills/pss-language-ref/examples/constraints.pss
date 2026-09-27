@@ -72,8 +72,8 @@ package cst_pkg {
         // A soft constraint (3.1) is a preference that is discarded when it
         // conflicts with a hard constraint or a higher-priority soft one.
         // A dist directive shapes the value distribution and is itself the
-        // LOWEST-priority soft constraint. Both are legal PSS (LRM 13.1.11,
-        // 13.1.12) but are not accepted by every front end, so they are shown
+        // LOWEST-priority soft constraint. Both are legal PSS (LRM 13.1.12,
+        // 13.1.13) but are not accepted by every front end, so they are shown
         // here rather than compiled:
         //
         //     constraint { soft mode == NARROW; }
@@ -81,6 +81,16 @@ package cst_pkg {
         //         dist addr in [0x0000_0000 := 1,               // each value
         //                       0x8000_0000..0x8FFF_FFFF :/ 8]; // across range
         //     }
+        //
+        // Generic constraints (3.1, LRM 13.1.2) are the replacement for
+        // deprecated `dynamic` constraints. The empty parameter list is what
+        // makes them generic: they hold only where referenced -- from another
+        // constraint, or by traversal in an activity. Also not universally
+        // supported yet:
+        //
+        //     constraint small_c()  { len <= 64; }
+        //     constraint jumbo_c()  { len >= 4096; }
+        //     constraint interesting_c { small_c() || jumbo_c(); }
     }
 }
 

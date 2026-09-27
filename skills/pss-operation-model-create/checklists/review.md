@@ -40,13 +40,13 @@ A pre-flight pass before calling an operation model done. Each line has a stage 
 
 ## API levels (stage 7)
 
-- [ ] `start_<op>` and `check_<op>` exist for every end-to-end operation, ungated
+- [ ] `<op>_start` and `<op>_check` exist for every end-to-end operation, ungated
 - [ ] `<op>()` is two lines — no register access, no address arithmetic, no device decision
-- [ ] `wait_<subject>()` contains no device access except through `probe`
-- [ ] Gating covers exactly: `wait_*`, `<op>`, end-to-end actions, `notify_*` — and nothing else
+- [ ] `<subject>_wait()` contains no device access except through `probe`
+- [ ] Gating covers exactly: `*_wait`, `<op>`, end-to-end actions, `notify_*` — and nothing else
 - [ ] The capability flag is asserted in the scenario layer, not in the device tree
-- [ ] Aborts claim no token and do not call `wait_<subject>()`
-- [ ] Non-terminating operations are documented on `start_<op>`, where both levels' readers see it
+- [ ] Aborts claim no token and do not call `<subject>_wait()`
+- [ ] Non-terminating operations are documented on `<op>_start`, where both levels' readers see it
 
 ## Notification (stage 8)
 

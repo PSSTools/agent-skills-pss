@@ -114,13 +114,13 @@ struct t_s {
   no characters. `foreach` requires an iterator, an index, or both; for a `set` an index shall
   not be used; for a `map` the index is key-typed.
 - **Comments** `{# ... #}` (multi-line) and `{#}` (to end of line) are removed from the result.
-- Two usage contexts (§4.7.1.3):
+- Two usage contexts (§4.7.1 *Special elements in triple-quoted string literals*):
   1. **target-template block** (target exec, target function, exec-file filename) — expanded
      **after the pre-body phase**;
   2. **string expression** **3.1** — expanded as part of evaluating the expression; anything
      referenceable in that context is referenceable in the mustache.
 - A triple-quoted string referencing only constant expressions is itself a constant.
-- **Mustache conversion formats** (§4.7.1.4): `int`→`%d`, `bit`→`%u`, `bool`→`"true"`/`"false"`,
+- **Mustache conversion formats** (§4.7.1.1 *Mustache notation*): `int`→`%d`, `bit`→`%u`, `bool`→`"true"`/`"false"`,
   `enum`→the enumerator's identifier, `string`→`%s`, `chandle`→`%p`, `float32`/`float64`→`%f`.
 
 ### Aggregate literals (§4.8)

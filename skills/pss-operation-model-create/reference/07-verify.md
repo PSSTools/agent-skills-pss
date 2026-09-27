@@ -67,7 +67,7 @@ A blocking simulation exercises the non-blocking core's **device interaction** â
 writes, their order, the completion decode, the guard transitions. It does **not** exercise:
 
 - the polling consumer's own loop, or what it does between polls;
-- any backoff, timeout or scheduling wrapped around `check_<op>()`;
+- any backoff, timeout or scheduling wrapped around `<op>_check()`;
 - the non-blocking level's *build* â€” that is tier 6, and it is separate for a reason.
 
 The first two are the consumer's concerns and belong to the consumer's own tests. Say so rather than

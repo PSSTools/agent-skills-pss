@@ -100,8 +100,8 @@ channel becomes a component, per stage 9.
 | `pause_engine`, `configure_interrupt_routing`, `write_descriptor`, `read_descriptor_residual` | configuration | — |
 | `notify_irq` | environment entry point | — |
 
-One condition serves all three end-to-end operations, so there is one `probe_status()` and one
-`wait_completion()` — named for the **subject** (the channel), not the operation.
+One condition serves all three end-to-end operations, so there is one `status_probe()` and one
+`completion_wait()` — named for the **subject** (the channel), not the operation.
 
 **Destructiveness — the finding that shapes everything downstream.** The spec's §4 preamble says it
 in one sentence that is easy to skim:
@@ -114,21 +114,21 @@ forever**. The guard is mandatory, and this is exactly the hazard `03-classify.m
 
 **A §10.2 case, straight from the spec.** CHn_CSR bit 11: *"This bit will not be set unless the ARS
 bit is cleared."* So `transfer_single` on an auto-restarting channel **never completes** — blocking,
-it never returns; polling, it is a loop that never exits. The note belongs on `start_transfer_single`,
+it never returns; polling, it is a loop that never exits. The note belongs on `transfer_single_start`,
 where both levels' readers will see it.
 
 ## Stage 7 — API levels
 
 ```
-start_transfer_single(cfg)     unconditional
-probe_status()                 unconditional   one CSR read -> wb_dma_status_e
-check_completion()             unconditional   guard + probe
-wait_completion()              gated           loop + guard release
+transfer_single_start(cfg)     unconditional
+status_probe()                 unconditional   one CSR read -> wb_dma_status_e
+completion_check()             unconditional   guard + probe
+completion_wait()              gated           loop + guard release
 transfer_single(cfg)           gated           start + wait; two lines
 ```
 
 `stop_channel` takes the abort shape: it claims no token (the channel already holds one), and it
-gets its own loop over `probe_status()` rather than calling `wait_completion()` — which would
+gets its own loop over `status_probe()` rather than calling `completion_wait()` — which would
 release the *transfer's* token.
 
 ## Stage 8 — notification scheme
@@ -175,17 +175,18 @@ The model in `src/pss` was built independently. What the procedure reproduced:
 
 ✅ `notify_irq()` posting blind to all four channels, with the "never read the event to route the
 event" reasoning · ✅ depth-1 `wake` per channel · ✅ the in-progress guard, from the read-clear
-finding · ✅ one `probe_status` / `check_completion` shared by all three operations · ✅
+finding · ✅ one `status_probe` / `completion_check` shared by all three operations · ✅
 `configure_interrupt_routing` as a precondition for any end-to-end operation to complete · ✅
 `stop_channel` as an abort with its own loop · ✅ the handshake in the environment · ✅ the bridge
 omitted · ✅ component-per-channel.
 
-**Three differences, all of them the skill's convention rather than the model's error:**
+**Two differences, both of them the skill's convention rather than the model's error.** Note that
+`src/pss`'s `transfer_single_start` **matches** this skill's convention — operation name first, role
+as the suffix.
 
 | `src/pss` | This skill | Why |
 |---|---|---|
-| `transfer_single_start` | `start_transfer_single` | Prefix sorts and greps with `check_*`. Cosmetic; pick one and hold it |
-| `wait_completion()` inlines `wake.get()` | a separate `wait_related_event()` | Makes the platform seam the single greppable thing an integrator reimplements |
+| `completion_wait()` inlines `wake.get()` | a separate `wait_related_event()` | Makes the platform seam the single greppable thing an integrator reimplements |
 | gated functions grouped in `blocking_ops.pss` | one file each | The grouping is defensible — they appear and disappear together — but it costs you finding `<op>` by looking for `<op>.pss` |
 
 **One thing the spec-only run could not produce:** `read_descriptor_residual` depends on SZ_WB

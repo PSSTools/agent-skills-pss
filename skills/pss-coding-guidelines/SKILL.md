@@ -98,14 +98,13 @@ import wb_dma_regs_pkg::*;
 component wb_dma_ops_c {
     wb_dma_regs_c    regs;
 
-    solve function void \init (addr_handle_t base) {
+    solve function void initialize(addr_handle_t base) {
         regs.set_handle(base);
     }
 }
 ```
 
-Note `\init` — an escaped identifier, because `init` collides with the `exec init` keyword. It needs
-the trailing space; see rule 9.
+Note the name: **`initialize`**, not `init` and not the escaped `\init `. See rule 10.
 
 ## 4. Elements attach via `extend`, grouped by kind
 
@@ -288,11 +287,23 @@ Three consequences for how you write:
 See `docs/pss-comment-propagation-plan.md` and the pssparser documentation's
 *Comments* page.
 
-## 10. Escaped identifiers need the trailing space
+## 10. Name the solve-time constructor `initialize`
 
-`\init` is written `\init (…)`, with a space before the paren. An escaped identifier is terminated by
-whitespace, so `\init(` lexes as a single token and produces a confusing syntax error. The same
-applies at the call site: `ch[i].\init (i, h);`.
+Not `init`, and not the escaped identifier `\init `.
+
+Older models use `\init ` on the belief that `init` is reserved. It is not: PSS 3.1 §4.4 Table 3
+does not list it, and the `exec_kind` production (§20.1.1) has only `init_down` and `init_up` — there
+is no bare `exec init`. So the escaping was never required.
+
+It is also actively hazardous. An escaped identifier is terminated by **whitespace**, so `\init (…)`
+needs the space before the paren at *both* declaration and call site — `ch[i].\init (i, h);`. Write
+`\init(` and it lexes as a single token, producing a syntax error that points nowhere useful.
+
+`initialize` is a plain identifier: no escaping, no whitespace rule, and it does not read as a
+near-miss for the `init_up` / `init_down` execs that call it.
+
+If you encounter `\init ` in an existing model, it is legal — rename it when you next touch the
+component rather than treating it as a bug.
 
 ---
 
@@ -301,7 +312,7 @@ applies at the call site: `ch[i].\init (i, h);`.
 1. Which scope does it belong to — root, or a package?
 2. Does it deserve its own file (rule 1)? Components, functions and actions do; types and registers
    join an existing grouped file.
-3. Component? → top-level `<name>.pss` + `<name>/` directory, skeleton only: members and `init`.
+3. Component? → top-level `<name>.pss` + `<name>/` directory, skeleton only: members and `initialize`.
 4. Function or action? → `<component>/functions|actions/<name>.pss`, wrapped in
    `extend component <component> { … }`.
 5. Data type or register? → append it to the package file or the register-bank file, in the section

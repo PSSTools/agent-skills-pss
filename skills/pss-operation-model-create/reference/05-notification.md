@@ -121,7 +121,7 @@ depends on it having been called.
 The one thing this stage exists to check:
 
 > For each subject `S`, the set of events that wake `S` must include **every** event that can change
-> the answer of `check_<op>()` for any operation on `S`.
+> the answer of `<op>_check()` for any operation on `S`.
 
 Miss one and the operation hangs after that event turns out to be the last thing that happens.
 Include an extra and you pay one probe.
@@ -144,7 +144,7 @@ design time instead of at 3am in a simulation that will not terminate.
 | Symptom | Cause | First thing to check |
 |---|---|---|
 | Blocking operation never returns | No notification: enablement (field 6) not programmed, or an event missing from the correspondence table | The routing/mask configuration, **before** the device |
-| `check_<op>()` answers PENDING forever | Destructive completion already consumed — a second check after a terminal status, or an abort raced it | The guard message; whether an abort ran concurrently |
+| `<op>_check()` answers PENDING forever | Destructive completion already consumed — a second check after a terminal status, or an abort raced it | The guard message; whether an abort ran concurrently |
 | Guard reports "check without start" | The one-operation-per-subject rule was broken | Whether the operation was started on *this* subject |
 | Unresolved symbol at link | `notify_<event>` pruned, or built at the wrong level | The level first, then pruning |
 

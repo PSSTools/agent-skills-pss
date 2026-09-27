@@ -1,6 +1,7 @@
 # Registers and data layout
 
-*Domain: platform. LRM §21.13.1 (packing), §21.14 (registers). All types from `addr_reg_pkg`.*
+*Domain: platform. LRM §21.13.1 (packing), §21.14 (registers). Register types from
+`addr_reg_pkg`; `packed_s` / `endianness_e` / `sizeof_s` from `std_pkg`.*
 
 ## When you are writing this
 
@@ -103,6 +104,9 @@ enum endianness_e { LITTLE_ENDIAN, BIG_ENDIAN };
 struct packed_s <endianness_e e = LITTLE_ENDIAN> {};
 ```
 
+- `packed_s`, `endianness_e`, and `sizeof_s` live in **`std_pkg`**. They were in `addr_reg_pkg`
+  in PSS 2.0; referring to them via `addr_reg_pkg` is **deprecated since PSS 2.1**, though tools
+  shall still accept it.
 - Any struct deriving from `packed_s`, directly or indirectly, is packed.
 - A packed struct may contain **only** numeric types, `bool`, **enums that have a base type**,
   packed struct types, and arrays of those. `bool` occupies 1 bit; bit fields may be any size.
@@ -239,9 +243,9 @@ package addr_reg_pkg {
   the hierarchy, appending each level's fragment; if a group implements `get_mnemonic_of_path()`
   it is invoked with the remaining path and descent **stops**. **No delimiters are inserted** —
   the fragments must supply their own separators.
-- Mode selection: `get_mnemonic_*` and `get_offset_*` are independent and a group may implement
-  both. Address-handle mode is the default and applies unless `use_symbolic_reg_names(grp, true)`
-  was called.
+- Mode selection (§21.14.6.5, Table 35): `get_mnemonic_*` and `get_offset_*` are independent and a
+  group may implement both. Address-handle mode is the default and applies unless
+  `use_symbolic_reg_names(grp, true)` was called.
 
 ## Gotchas
 

@@ -11,6 +11,8 @@
 | "must", "never", "always", "illegal" | a **hard** constraint |
 | "usually", "prefer", "by default" | `soft` **3.1**, or a `default` value constraint |
 | "mostly A, sometimes B" | `dist` |
+| "only in this scenario / on this branch" | a **generic constraint** `constraint c() { … }` **3.1**, referenced or traversed where it applies |
+| "the same rule against different fields" | a **generic constraint with parameters** **3.1** |
 | "the tool should pick" | nothing — leave it `rand` |
 
 A hard constraint that isn't really a rule is how models become unsolvable. A `soft` constraint

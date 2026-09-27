@@ -109,7 +109,7 @@ statements only, never inside an expression.** `a <<= b` ≡ `a = a << b`.
 `return expr;` in a non-`void` function — the return type is the expected type of the
 expression. Bare `return;` ends a `void` function or an exec block.
 
-### `repeat` / `while` (§20.7.6, §20.7.7, §20.7.8)
+### `repeat` / `while` (§20.7.6, §20.7.7)
 
 - `repeat (count) stmt` — count is a **non-negative** `int`/`bit` expression.
 - `repeat (index : count) stmt` — the index ranges `0 .. count-1`.
@@ -117,7 +117,7 @@ expression. Bare `return;` ends a `void` function or an exec block.
 - `repeat stmt while (cond);` — condition sampled **after** each iteration.
 - Conditions must be `bool`.
 
-### `foreach` (§20.7.9)
+### `foreach` (§20.7.8)
 
 - `foreach ([iterator :] collection [[index]]) stmt`
 - **The iterator and index variables are implicitly declared, scoped to the loop, and
@@ -127,7 +127,7 @@ expression. Bare `return;` ends a `void` function or an exec block.
   index is forbidden.** For a `map`, the index is **key-typed** and traversal order is
   **undefined**.
 
-### `match` (§20.7.9 / §20.7.10)
+### `match` (§20.7.10 *match statement*)
 
 - Arms take **`open_range_list`s** — integer ranges, enum lists, or lists of string **literals**
   (`"a".."b"` ranges are **not** allowed).

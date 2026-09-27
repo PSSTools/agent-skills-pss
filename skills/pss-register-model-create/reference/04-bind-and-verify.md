@@ -38,12 +38,13 @@ Three things to get right:
   bank.
 - **`init_up` vs `init_down`.** Use `init_up` when the component computes its own base;
   `init_down` when a parent hands it down. For a per-instance shape (`03-model-groups` shape B) the
-  handle is usually computed in a `solve function \init (…)` called by the parent, using
+  handle is usually computed in a `solve function initialize(…)` called by the parent, using
   `make_handle_from_handle(base, offset)`.
 
-Note the escaped identifier: `\init` is written `\init (…)` with a space before the paren, at both
-declaration and call site — `init` collides with the `exec init` keyword, and `\init(` lexes as one
-token (`pss-coding-guidelines` rule 9).
+Name it **`initialize`**, not `init` and not the escaped `\init ` (`pss-coding-guidelines` rule 10).
+`init` is not reserved in PSS 3.1, so the escaping older models use was never required — and `\init `
+is terminated by whitespace, so it needs the space before the paren at both declaration and call
+site or it lexes as one token.
 
 ### Symbolic names (PSS 3.1)
 

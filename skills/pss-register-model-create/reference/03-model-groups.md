@@ -108,7 +108,7 @@ pure component dev_regs_c : reg_group_c {
 component wb_dma_ch_c {
     wb_dma_ch_regs_c  regs;         // its own top-level group
 
-    solve function void \init (int chan, addr_handle_t base) {
+    solve function void initialize(int chan, addr_handle_t base) {
         regs.set_handle(make_handle_from_handle(
             base, WB_DMA_CH_BASE + chan * WB_DMA_CH_STRIDE));
     }

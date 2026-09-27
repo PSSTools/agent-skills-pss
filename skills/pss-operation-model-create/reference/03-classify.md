@@ -35,7 +35,7 @@ For each **end-to-end** operation, answer three questions in writing.
 Which device-observable state changes, and how does it decode? Name the register and the bits.
 
 Several operations often share one condition — everything acting on one channel completes off that
-channel's status register. When they do, they share one decode function (`probe_<subject>`) and one
+channel's status register. When they do, they share one decode function (`<subject>_probe`) and one
 wait, both named for the **subject**, not the operation.
 
 If two operations on the same subject need genuinely *different* decodes, that is a signal they act
@@ -50,7 +50,7 @@ number of times. It is usually an RTL fact and it is frequently under-documented
 |---|---|
 | **Non-destructive** — a level bit, a status word that survives being read | Easiest case. The check is idempotent, the guard is optional, a caller may poll as often and as late as it likes |
 | **Read-to-clear** — reading the status consumes it | The common hardware case. Safe only if the value is captured by the same read that observes it, and only if **one caller at a time** polls the subject. **The guard below is mandatory** |
-| **Consuming** — the check dequeues the result | The check *is* the completion. `check_<op>()` must return the payload, not just a status, and the operation cannot be polled speculatively at all |
+| **Consuming** — the check dequeues the result | The check *is* the completion. `<op>_check()` must return the payload, not just a status, and the operation cannot be polled speculatively at all |
 
 **How to find out.** In order of reliability: the RTL's clear conditions for those bits; the register
 spec's access-class column (a marker like `RC`, `ROC`, `RWC`, or a legend note that "a C indicates
@@ -73,7 +73,7 @@ that a simulation caller never had to think about.
 
 **Applies when the completion condition is read-to-clear or consuming.** Skip it otherwise.
 
-Two mistakes become possible the moment `check_<op>()` is public, and neither is visible from the
+Two mistakes become possible the moment `<op>_check()` is public, and neither is visible from the
 device side — a stale read and a live one look identical:
 
 1. Polling a subject on which nothing was started.
@@ -81,7 +81,7 @@ device side — a stale read and a live one look identical:
    it reads a subject whose status has been taken, and answers **PENDING forever**.
 
 The blocking layer was quietly protecting you from both: it contained the destructive read inside a
-loop that exits holding the value. Publishing `check_<op>()` moves that hazard to a caller with no
+loop that exits holding the value. Publishing `<op>_check()` moves that hazard to a caller with no
 such containment.
 
 ### Shape
@@ -92,15 +92,15 @@ depth-1 channel **is** the latch:
 ```
     inflight : channel_c<bit,1>       // present on every profile
 
-start_<op>():   if (!inflight.try_put(1)) report("already in progress"); return;
+<op>_start():   if (!inflight.try_put(1)) report("already in progress"); return;
                 ... program, arm ...
 
-check_<op>():   if (!inflight.try_get(tok)) report("check without start"); return PENDING;
-                status = probe_<subject>();
+<op>_check():   if (!inflight.try_get(tok)) report("check without start"); return PENDING;
+                status = <subject>_probe();
                 if (status == PENDING) inflight.try_put(tok);   // restore
                 return status;                                  // else leave taken
 
-wait_<subject>(): loop { status = probe(); if terminal break; wait_related_event(); }
+<subject>_wait(): loop { status = probe(); if terminal break; wait_related_event(); }
                 inflight.try_get(tok);                          // release once, at the end
 ```
 
@@ -136,7 +136,7 @@ enum <dev>_status_e { <DEV>_DONE, <DEV>_ERROR, <DEV>_PENDING }
 ```
 
 - **Append**, so existing numeric values are preserved — they cross into generated code.
-- **One enum, not two**, so `check_<op>()` and `<op>()` share a return type with no conversion
+- **One enum, not two**, so `<op>_check()` and `<op>()` share a return type with no conversion
   between the layers.
 - **Document that the blocking forms never return PENDING.** They return only on a terminal state,
   so an existing caller still has exactly two outcomes to handle.

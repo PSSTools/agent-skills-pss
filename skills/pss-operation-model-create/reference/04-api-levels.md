@@ -4,11 +4,11 @@ Every end-to-end operation becomes five functions. Four of them are unconditiona
 
 | Role | Signature | Present | What it does |
 |---|---|---|---|
-| `start_<op>` | `void start_<op>(args)` | always | Claim the guard, program, arm. Returns with the device running. **All device knowledge lives here** |
-| `probe_<subject>` | `status_e probe_<subject>()` | always | One read of the completion condition, decoded. No guard, no loop. Internal |
-| `check_<op>` | `status_e check_<op>()` | always | Guard + `probe`. **The public non-blocking API** |
-| `wait_<subject>` | `status_e wait_<subject>()` | gated | The loop, then release the guard. Calls `wait_related_event()` |
-| `<op>` | `status_e <op>(args)` | gated | `start_<op>(args); return wait_<subject>();` — nothing else |
+| `<op>_start` | `void <op>_start(args)` | always | Claim the guard, program, arm. Returns with the device running. **All device knowledge lives here** |
+| `<subject>_probe` | `status_e <subject>_probe()` | always | One read of the completion condition, decoded. No guard, no loop. Internal |
+| `<op>_check` | `status_e <op>_check()` | always | Guard + `probe`. **The public non-blocking API** |
+| `<subject>_wait` | `status_e <subject>_wait()` | gated | The loop, then release the guard. Calls `wait_related_event()` |
+| `<op>` | `status_e <op>(args)` | gated | `<op>_start(args); return <subject>_wait();` — nothing else |
 
 `probe` and `wait` are named for the **subject** because several operations usually share one
 completion condition. `probe` is separate from `check` for one reason: exactly one caller needs the
@@ -19,7 +19,7 @@ decode without the guard (the abort, below). If your device has no such caller, 
 > **The blocking wrapper adds only the loop.**
 
 Mechanical test: if `<op>()`'s body contains **any** register access, address arithmetic, or
-device-specific decision, the split is wrong and that content belongs in `start_<op>()`. A correct
+device-specific decision, the split is wrong and that content belongs in `<op>_start()`. A correct
 `<op>()` is two lines.
 
 This is not style. It is the entire basis for the claim that one regression covers both levels: a
@@ -27,13 +27,13 @@ simulation exercises the non-blocking core *because the core is the body of what
 runs*. Every line that leaks into the wrapper is a line the polling consumer executes and the
 regression does not.
 
-Same rule for `wait_<subject>()`: it may contain the loop, the wake and the guard release, and no
+Same rule for `<subject>_wait()`: it may contain the loop, the wake and the guard release, and no
 device access except through `probe`.
 
 ## The two waits
 
 ```
-wait_<subject>()          the loop + the guard release           (one per subject)
+<subject>_wait()          the loop + the guard release           (one per subject)
     while (probe() == PENDING) wait_related_event();
 
 wait_related_event()      the one platform-dependent line        (stage 8)
@@ -59,9 +59,9 @@ declare the same package and the build selects one.
 
 | Element | Gated? |
 |---|---|
-| `wait_<subject>`, `<op>`, the end-to-end actions | **yes** |
+| `<subject>_wait`, `<op>`, the end-to-end actions | **yes** |
 | `notify_<event>` | **yes** |
-| `start_<op>`, `probe`, `check_<op>`, all configuration operations | no |
+| `<op>_start`, `probe`, `<op>_check`, all configuration operations | no |
 | the `inflight` guard channel | **no** — `try_*` never blocks |
 | the `wake` channel *member* | **no** — it is the `get()`, not the declaration, that needs a scheduler |
 
@@ -79,8 +79,8 @@ be made.
 | | Non-blocking | Blocking |
 |---|---|---|
 | Configuration operations | all | all |
-| `start_<op>`, `probe`, `check_<op>` | all | all (used by the layer above) |
-| `wait_<subject>`, `<op>` | — | all |
+| `<op>_start`, `probe`, `<op>_check` | all | all (used by the layer above) |
+| `<subject>_wait`, `<op>` | — | all |
 | Scenario actions | **none** | all |
 | `notify_<event>` | — | yes |
 | Event routing required for progress | no | **yes** |
@@ -109,14 +109,14 @@ Each is a real device behaviour, not an edge case to smooth over.
 An abort (`stop`, `cancel`, `flush`) terminates a transaction that is *already running*, so the
 subject already holds the guard token.
 
-- **`start_<abort>()` claims nothing.** Claiming would report the one case the model explicitly
+- **`<abort>_start()` claims nothing.** Claiming would report the one case the model explicitly
   permits as a violation.
-- **`<abort>()` cannot call `wait_<subject>()`**, because that ends by *releasing* a token — it
+- **`<abort>()` cannot call `<subject>_wait()`**, because that ends by *releasing* a token — it
   would take the aborted operation's. Give the abort its own loop over `probe`, without the release.
   This is the one caller that needs a guard-free probe. The duplication is five lines and it is the
   honest shape; a "do not release" flag would hide the one place two operations legitimately share a
   subject.
-- **At the non-blocking level there is no `check_<abort>()`** — the abort holds no token, so it has
+- **At the non-blocking level there is no `<abort>_check()`** — the abort holds no token, so it has
   nothing to poll with. A caller aborts, then keeps polling *the operation it aborted*.
 
 Whichever of the two reads a destructive terminal status first consumes it, and which one that is
@@ -129,7 +129,7 @@ operation does causes it. Something else must clear the mode or abort the subjec
 
 Blocking, this is a call that never returns, so it must never be the only thing a scenario waits on.
 Non-blocking, it is a loop that never exits — the same defect with a *less* visible symptom.
-Document it on `start_<op>()`, where both levels' readers will see it.
+Document it on `<op>_start()`, where both levels' readers will see it.
 
 ### 3. Blocking on something that is not an event surface
 
@@ -149,6 +149,6 @@ free — the loop is wake-and-recheck.
 But note the cost on the polling side: every probe that returns PENDING still **acknowledges**
 whatever intermediate sources happen to be set, if those bits are destructive. Nothing is lost only
 because the polling caller is the sole consumer of them — the one-caller-per-subject rule again, now
-visible to firmware. State it in `check_<op>()`'s contract.
+visible to firmware. State it in `<op>_check()`'s contract.
 
 → Next: `05-notification.md`

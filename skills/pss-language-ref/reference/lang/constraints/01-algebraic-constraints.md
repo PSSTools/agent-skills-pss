@@ -24,7 +24,9 @@
 | a value unless overridden statically | `default x == 4;` / `default disable x;` |
 | a preference that yields to hard rules | `soft x == 4;` **3.1** |
 | a weighted spread of values | `dist x in [1 := 5, 2..8 :/ 5];` |
-| a constraint enabled by a condition at traversal | `dynamic constraint` |
+| a constraint that applies only when selected at traversal | **generic constraint** `constraint c() { ... }` **3.1** |
+| a reusable constraint parameterized by expressions | **generic constraint** with parameters **3.1** |
+| a reusable *expression* (min, max, alignment) | value-yielding generic constraint **3.1** |
 
 ### `soft` vs `default` vs `dist`
 
@@ -89,17 +91,90 @@ action test {
 - Constraint expressions follow the usual expression typing rules (§8.7), including width and
   signedness propagation. See `../data/04-expressions-operators.md`.
 
-### Inheritance (§13.1.2)
+### Generic constraints **3.1** (§13.1.2 *Generic constraints*)
+
+A **fixed** constraint always holds. A **generic** constraint holds only where it is *referenced*
+— from inside another constraint, or by traversing it in an activity. The empty parameter list is
+what distinguishes the declaration from a fixed constraint:
+
+```pss
+constraint pkt_sz_c { pkt_sz > 0; }              // fixed: always holds
+constraint small_pkt_c() { pkt_sz <= 100; }      // generic: holds only where referenced
+constraint jumbo_pkt_c() { pkt_sz > 1500; }
+constraint interesting_sz_c { small_pkt_c() || jumbo_pkt_c(); }   // referenced from a fixed constraint
+```
+
+Two forms:
+
+| Form | Declaration | Use |
+|---|---|---|
+| **Boolean** | `[static] constraint name(params) { constraint_set }` | referenced as a constraint item, or as a boolean term |
+| **Value-yielding** | `[static] constraint <type> name(params) expression;` | usable anywhere an expression of that type is legal |
+
+```pss
+constraint numeric max(numeric a, numeric b) (a < b) ? b : a;   // value-yielding
+struct S {
+    rand bit[8] j, k, l;
+    constraint j == max(k, l);      // expands to j == (k < l) ? l : k
+}
+```
+
+Rules:
+
+- Declarable in **struct, action, and component** scopes, and in **package** scope, where they are
+  always `static`.
+- Parameter types are `numeric` or any data type; a parameter may be `const`. `numeric` makes the
+  constraint usable for both integer and floating-point expressions.
+- **No local variables** may be declared inside a generic constraint.
+- A value-yielding generic constraint is **a single expression**, not a statement block.
+- Shadowing a base-type constraint requires **matching return and parameter types** (§13.1.3).
+- **Recursion is legal**, provided the recursion is gated by an expression that involves no random
+  variables:
+
+```pss
+constraint gt_a_list_elem_inner(bit[64] val, list<bit[64]> l, const bit[64] idx) {
+    if (idx + 1 < l.size()) { (val > l[idx]) || gt_a_list_elem_inner(val, l, idx+1); }
+    else                    { (val > l[idx]); }
+}
+```
+
+**Traversed in an activity**, a generic constraint holds for the rest of that activity branch and
+the remainder of the activity — and the solver must look ahead across it (§13.4.11 *Lookahead and
+generic constraints*):
+
+```pss
+action dyn {
+    A a, b;
+    constraint d1() { b.val < a.val; b.val <= 5; }
+    constraint d2() { b.val > a.val; b.val <= 7; }
+    activity {
+        a;
+        select { d1; d2; }      // traversing the constraint selects it
+        b;
+    }
+}
+```
+
+`a.val` must be chosen so that a legal `b.val` still exists on the selected branch.
+
+> **`dynamic` constraints are deprecated** (§13.1.1). A generic constraint with no parameters is
+> the replacement, and the `dynamic_constraint` production is gone from the 3.1 grammar. `dynamic`
+> is still a reserved keyword (§4.4), so existing models parse, but write new code as generic
+> constraints. See `03-randomization.md`.
+
+### Constraint inheritance (§13.1.3)
 
 Constraints are inherited. A same-named constraint in a derived type **replaces** the base's;
-an unnamed one adds to it. This is the constraint analogue of exec shadowing.
+an unnamed one adds to it. This is the constraint analogue of exec shadowing. It applies the same
+way to fixed and generic constraints — but a generic constraint that shadows must match the base's
+return and parameter types.
 
-### Inline constraints (§13.1.3)
+### Inline constraints (§13.1.4 *Action traversal in-line constraints*)
 
 `do A with { ... };` or `a1 with { ... };` — applies only to that traversal. Inside, the
 traversed action's fields are unqualified; the containing action's fields are reachable too.
 
-### Implication and if-else (§13.1.5, §13.1.6)
+### Implication and if-else (§13.1.6, §13.1.7)
 
 - `expr -> constraint_set;`
 - `if (expr) constraint_set [else constraint_set]`
@@ -107,12 +182,12 @@ traversed action's fields are unqualified; the containing action's fields are re
   is the single most misunderstood constraint behaviour in PSS — it is a logical relation, not
   a procedural test.
 
-### `foreach` constraints (§13.1.7)
+### `foreach` constraints (§13.1.8)
 
 `foreach ([iter :] expr [[index]]) constraint_set` — iterates a collection. Same
 iterator/index rules as elsewhere: read-only, implicitly declared, scoped to the loop.
 
-### `forall` constraints (§13.1.8)
+### `forall` constraints (§13.1.9)
 
 `forall (iter : type_id [in ref_path]) constraint_set` — applies to **every instance of that
 type** in the constraint's application scope. `type_id` may be an action, struct, stream,
@@ -123,7 +198,7 @@ compound action also its sub-actions.
 This is the tool for "every memory segment in this scenario must be aligned" without touching
 every declaration.
 
-### `unique` constraints (§13.1.9)
+### `unique` constraints (§13.1.10)
 
 Two forms:
 
@@ -132,7 +207,7 @@ Two forms:
   negative) the constraint is **satisfied vacuously**.
 - `unique { a, b, c };` — those attributes' values shall be unique.
 
-### Default value constraints (§13.1.10)
+### Default value constraints (§13.1.11)
 
 - `default hierarchical_id == constant_expression;`
 - `default disable hierarchical_id;`
@@ -142,7 +217,7 @@ Two forms:
   contradicts an active default is discarded.
 - Multiple defaults / `default disable`s in the same type scope are order-sensitive (§17.2.5).
 
-### Soft constraints **3.1** (§13.1.11)
+### Soft constraints **3.1** (§13.1.12)
 
 `soft expression;`
 
@@ -160,7 +235,7 @@ Two forms:
   6. within an iterative constraint, **later iterations** beat earlier ones;
   7. a `forall` behaves as if expanded in-line at its location.
 
-### Distribution directive (§13.1.12)
+### Distribution directive (§13.1.13)
 
 `dist expression in [ item [:= w | :/ w], … ];`
 
@@ -197,7 +272,7 @@ true silently disables the whole constraint. If a constraint seems to have no ef
 whether its antecedent is reachable.
 *Tier 4.*
 
-**Vacuous `unique` on an empty slice.** Satisfied regardless of values (§13.1.9). Easy to hit
+**Vacuous `unique` on an empty slice.** Satisfied regardless of values (§13.1.10). Easy to hit
 when the slice bounds are themselves random.
 *Tier 4.*
 
@@ -223,6 +298,20 @@ constraint { default len == other_field; }   // WRONG: must be a constant expres
 **Same-named constraint in a derived type silently replacing the base's.** Name it differently
 if you meant to add.
 *Tier 4.*
+
+**Omitting `()` on a generic constraint.**
+```pss
+constraint small_pkt_c  { pkt_sz <= 100; }   // FIXED — always holds
+constraint small_pkt_c() { pkt_sz <= 100; }  // GENERIC — holds only where referenced
+```
+Both parse. The first silently applies everywhere, which is usually the opposite of what was
+meant. *Tier 4.* Note that the LRM's own Example185 (§13.4.11) drops the parens; the BNF in
+§13.1.2.1 requires them.
+
+**Local variables inside a generic constraint.** Not permitted (§13.1.2). *Tier 2.*
+
+**Unbounded recursion in a generic constraint.** Recursion must be gated by a condition with no
+random variables. A gate on a `rand` field does not terminate. *Tier 3.*
 
 **Constraining across the solve/target boundary.** A field assigned in `exec body` cannot appear
 meaningfully in a constraint (§13.4.13), and **no backtracking happens across exec blocks** —

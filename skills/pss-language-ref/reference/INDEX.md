@@ -9,12 +9,14 @@ Paths are relative to this file. `lang/` pages are grouped by domain; see each d
 
 ## PSS keywords
 
-Every keyword reserved by PSS 3.1 §4.4.
+Every keyword reserved by PSS 3.1 §4.4, plus three 3.1 tokens marked † that the LRM's Table 3
+omits but the grammar requires (`annotation`, `mutable`, `soft`).
 
 | Keyword | Means | Page |
 |---|---|---|
 | `abstract` | action that cannot be traversed directly; must be inherited from | `lang/structural/03-actions.md` |
 | `action` | declares a unit of schedulable behavior | `lang/structural/03-actions.md` |
+| `annotation` † | declares a user-defined annotation type **3.1** | `lang/data/05-annotations.md` |
 | `activity` | declares the composition body of a compound action | `lang/activity/01-activities.md` |
 | `array` | fixed-size collection type `array<T,N>` | `lang/data/03-collections.md` |
 | `as` | package alias (`import p as q;`) | `lang/structural/01-packages-and-name-resolution.md` |
@@ -33,7 +35,7 @@ Every keyword reserved by PSS 3.1 §4.4.
 | `component` | structural container: instances, attributes, actions, pools | `lang/structural/02-components.md` |
 | `concat` | behavioral coverage concatenation scenario | `lang/coverage/02-behavioral-coverage.md` |
 | `const` | immutable declaration; non-mutating parameter | `lang/data/02-data-types.md`, `lang/procedural/02-functions.md` |
-| `constraint` | declares a constraint block or named constraint | `lang/constraints/01-algebraic-constraints.md` |
+| `constraint` | declares a fixed constraint block, a named constraint, or a **generic constraint** (`constraint c(params) {…}`) **3.1** | `lang/constraints/01-algebraic-constraints.md` |
 | `continue` | next iteration of the innermost procedural loop | `lang/procedural/03-procedural-statements.md` |
 | `cover` | behavioral coverage statement | `lang/coverage/02-behavioral-coverage.md` |
 | `covergroup` | data coverage model declaration | `lang/coverage/01-data-coverage.md` |
@@ -44,7 +46,7 @@ Every keyword reserved by PSS 3.1 §4.4.
 | `disable` | disables a constraint or coverage element | `lang/constraints/01-algebraic-constraints.md` |
 | `dist` | weighted value distribution directive | `lang/constraints/01-algebraic-constraints.md` |
 | `do` | traverses an action in an activity | `lang/activity/01-activities.md` |
-| `dynamic` | dynamic constraint declaration/reference | `lang/constraints/01-algebraic-constraints.md` |
+| `dynamic` | **deprecated in 3.1** — dynamic constraints are replaced by generic constraints; still reserved, but no grammar production uses it | `lang/constraints/01-algebraic-constraints.md` |
 | `else` | alternative branch of `if` (activity, constraint, procedural) | `lang/activity/01-activities.md` |
 | `enum` | enumeration type | `lang/data/02-data-types.md` |
 | `eventually` | behavioral coverage eventuality scenario | `lang/coverage/02-behavioral-coverage.md` |
@@ -81,8 +83,9 @@ Every keyword reserved by PSS 3.1 §4.4.
 | `map` | keyed collection type `map<K,V>` | `lang/data/03-collections.md` |
 | `match` | multi-way branch (activity or procedural) | `lang/procedural/03-procedural-statements.md`, `lang/activity/01-activities.md` |
 | `monitor` | behavioral coverage observation type | `lang/coverage/02-behavioral-coverage.md` |
+| `mutable` † | component attribute writable during solve-time execution **3.1** | `lang/structural/02-components.md` |
 | `null` | null reference literal | `lang/data/02-data-types.md` |
-| `numeric` | numeric template parameter category | `lang/structural/08-templates.md` |
+| `numeric` | numeric template parameter category; also the generic-constraint parameter/result category **3.1** | `lang/structural/08-templates.md`, `lang/constraints/01-algebraic-constraints.md` |
 | `output` | action's produced flow object; imported-function parameter direction | `lang/structural/04-flow-objects.md` |
 | `overlap` | behavioral coverage overlapping scenario | `lang/coverage/02-behavioral-coverage.md` |
 | `override` | replaces a type globally or within a scope | `lang/structural/07-inheritance-extension-overrides.md` |
@@ -110,6 +113,7 @@ Every keyword reserved by PSS 3.1 §4.4.
 | `sequence` | explicit sequential activity or procedural block | `lang/activity/01-activities.md` |
 | `set` | set collection type `set<T>` | `lang/data/03-collections.md` |
 | `share` | non-exclusive claim on a resource object | `lang/structural/05-resource-objects.md` |
+| `soft` † | prioritized-preference constraint **3.1** | `lang/constraints/01-algebraic-constraints.md` |
 | `solve` | platform qualifier: generation time only | `lang/procedural/01-exec-blocks.md` |
 | `state` | flow object representing environment state, with `prev`/`initial` | `lang/structural/04-flow-objects.md` |
 | `static` | class-level (not instance) member; `static const` | `lang/structural/02-components.md` |

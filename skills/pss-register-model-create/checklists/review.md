@@ -69,7 +69,7 @@ names the page that explains it.
 - [ ] `set_handle()` is called only on the **top-level** group, only from `exec init_up` /
       `init_down`. (PSL024)
 - [ ] The MMIO region is **non-allocatable**, and its size is the full span, not one bank.
-- [ ] `\init` is written with the trailing space at both declaration and call site.
+- [ ] The solve-time constructor is named `initialize` — not `init`, not the escaped `\init `.
 
 ## Verification
 

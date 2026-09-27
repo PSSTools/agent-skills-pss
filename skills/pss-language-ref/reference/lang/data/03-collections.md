@@ -87,7 +87,8 @@ Fixed size, known at elaboration. Methods:
 | `list<T> to_list()` | |
 | `set<T> to_set()` | |
 
-The properties `a.size` / `a.sum` are **deprecated** spellings of `a.size()` / `a.sum()`.
+The properties `a.size` / `a.sum` are **deprecated** spellings of `a.size()` / `a.sum()`
+(§7.9.2.4 *Array properties*). Use the methods.
 
 ### Lists (§7.9.3)
 
